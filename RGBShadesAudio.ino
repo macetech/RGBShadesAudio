@@ -66,17 +66,28 @@
 // Runs one time at the start of the program (power up or reset)
 void setup() {
 
+  // check to see if EEPROM has been used yet
+  // if so, load the stored settings
+  byte eepromWasWritten = EEPROM.read(0);
+  if (eepromWasWritten == 99) {
+      currentEffect = EEPROM.read(1);
+      autoCycle = EEPROM.read(2);
+      currentBrightness = EEPROM.read(3);
+  }
+
   // write FastLED configuration data
-  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);//.setCorrection(TypicalSMD5050);
+  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);
   
   // set global brightness value
-  FastLED.setBrightness( scale8(STARTBRIGHTNESS, MAXBRIGHTNESS) );
+  FastLED.setBrightness( scale8(currentBrightness, MAXBRIGHTNESS) );
 
   // configure input buttons
   pinMode(MODEBUTTON, INPUT_PULLUP);
   pinMode(BRIGHTNESSBUTTON, INPUT_PULLUP);
   pinMode(STROBEPIN, OUTPUT);
   pinMode(RESETPIN, OUTPUT);
+
+  analogReference(DEFAULT);
 
   digitalWrite(RESETPIN, LOW);
   digitalWrite(STROBEPIN, HIGH);

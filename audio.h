@@ -1,6 +1,6 @@
 // Interface with MSGEQ7 chip for audio analysis
 
-#define AUDIODELAY 4
+#define AUDIODELAY 10
 
 // Pin definitions
 #define ANALOGPIN 3
@@ -8,25 +8,25 @@
 #define RESETPIN 7
 
 // Smooth/average settings
-#define SPECTRUMSMOOTH 0.07
+#define SPECTRUMSMOOTH 0.08
 #define PEAKDECAY 0.01
 #define NOISEFLOOR 65
 
 // AGC settings
 #define AGCSMOOTH 0.004
-#define GAINUPPERLIMIT 8.0
+#define GAINUPPERLIMIT 15.0
 #define GAINLOWERLIMIT 0.1
 
 // Global variables
 unsigned int spectrumValue[7];  // holds raw adc values
 float spectrumDecay[7] = {0};   // holds time-averaged values
 float spectrumPeaks[7] = {0};   // holds peak values
-float audioAvg = 0.0;
+float audioAvg = 270.0;
 float gainAGC = 0.0;
 
 void doAnalogs() {
 
-  static PROGMEM const byte spectrumFactors[7] = {10, 10, 11, 12, 13, 14, 16};
+  static PROGMEM const byte spectrumFactors[7] = {9, 11, 13, 13, 12, 12, 13};
 
   // reset MSGEQ7 to first frequency bin
   digitalWrite(RESETPIN, HIGH);
@@ -46,8 +46,6 @@ void doAnalogs() {
     // read the analog value
     spectrumValue[i] = analogRead(ANALOGPIN);
     digitalWrite(STROBEPIN, HIGH);
-
-    if (i == 3) Serial.println(spectrumValue[i]);
 
     // noise floor filter
     if (spectrumValue[i] < NOISEFLOOR) {
@@ -77,7 +75,7 @@ void doAnalogs() {
   audioAvg = (1.0 - AGCSMOOTH) * audioAvg + AGCSMOOTH * (analogsum / 7.0);
 
   // Calculate gain adjustment factor
-  gainAGC = 250.0 / audioAvg;
+  gainAGC = 270.0 / audioAvg;
   if (gainAGC > GAINUPPERLIMIT) gainAGC = GAINUPPERLIMIT;
   if (gainAGC < GAINLOWERLIMIT) gainAGC = GAINLOWERLIMIT;
 

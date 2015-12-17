@@ -11,8 +11,8 @@
 #define BTNLONGPRESS 4
 #define BTNLONGPRESSREAD 5
 
-#define BTNDEBOUNCETIME 20
-#define BTNLONGPRESSTIME 1000
+#define BTNDEBOUNCETIME 30
+#define BTNLONGPRESSTIME 1500
 
 unsigned long buttonEvents[NUMBUTTONS];
 byte buttonStatuses[NUMBUTTONS];

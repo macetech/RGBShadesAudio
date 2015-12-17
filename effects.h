@@ -331,16 +331,13 @@ void scrollTextTwo() {
 
 
 #define analyzerFadeFactor 5
-#define analyzerScaleFactor 2
+#define analyzerScaleFactor 1.5
 #define analyzerPaletteFactor 2
 void drawAnalyzer() {
   // startup tasks
   if (effectInit == false) {
     effectInit = true;
-    effectDelay = 5;
-    //currentPalette = CRGBPalette16(CRGB::Red, CRGB::Orange, CRGB::Gray);
-    //currentPalette = RainbowColors_p;
-    //currentPalette = HeatColors_p;
+    effectDelay = 10;
     selectRandomAudioPalette();
   }
 
@@ -350,12 +347,20 @@ void drawAnalyzer() {
 
   for (byte x = 0; x < kMatrixWidth / 2; x++) {
     byte newX = x;
-    if (x < 2) newX = 0; else newX = x - 1;
+    int freqVal;
+    if (x < 2) {
+      newX = 0;
+      freqVal = spectrumDecay[newX] / 2;
+    } else {
+      newX = x - 1;
+      freqVal = spectrumDecay[newX];
+    }
+    
     for (byte y = 0; y < kMatrixHeight; y++) {
       if (x > 6) {
         pixelColor = ColorFromPalette(currentPalette, 0, 0);
       } else {
-        int senseValue = spectrumDecay[newX] / analyzerScaleFactor - yScale * (kMatrixHeight - 1 - y);
+        int senseValue = freqVal / analyzerScaleFactor - yScale * (kMatrixHeight - 1 - y);
         int pixelBrightness = senseValue * analyzerFadeFactor;
         if (pixelBrightness > 255) pixelBrightness = 255;
         if (pixelBrightness < 0) pixelBrightness = 0;
@@ -375,20 +380,20 @@ void drawAnalyzer() {
 }
 
 #define VUFadeFactor 5
-#define VUScaleFactor 2.5
+#define VUScaleFactor 2.0
 #define VUPaletteFactor 1.5
 void drawVU() {
   // startup tasks
   if (effectInit == false) {
     effectInit = true;
-    effectDelay = 5;
+    effectDelay = 10;
     selectRandomAudioPalette();
   }
 
   CRGB pixelColor;
 
   const float xScale = 255.0 / (kMatrixWidth / 2);
-  float specCombo = (spectrumDecay[0] + spectrumDecay[1]) / 2.0;
+  float specCombo = (spectrumDecay[0] + spectrumDecay[1] + spectrumDecay[2] + spectrumDecay[3]) / 4.0;
 
   for (byte x = 0; x < kMatrixWidth / 2; x++) {
     int senseValue = specCombo / VUScaleFactor - xScale * x;
