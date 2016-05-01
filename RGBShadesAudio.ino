@@ -27,9 +27,13 @@
 //   [Press] the SW2 button to cycle through available brightness levels
 //   [Press and hold] the SW2 button (one second) to reset brightness to startup value
 //
+//   [Press] SW1 and SW2 together to toggle between audio and non-audio effect sets
+//   You can edit the mix of effects (for example, both audio and standard patterns in the same set)
+//   Simply edit effectListAudio[] and effectListNoAudio[] below
+//   When audio/non-audio mode has been toggled, you will see three green blinks.
+//
 //   Brightness, selected effect, and auto-cycle are saved in EEPROM after a delay
 //   The RGB Shades will automatically start up with the last-selected settings
-
 
 // RGB Shades data output to LEDs is on pin 5
 #define LED_PIN  5
@@ -62,22 +66,58 @@
 #include "effects.h"
 #include "buttons.h"
 
+// list of functions that will be displayed
+functionList effectListAudio[] = {drawVU,
+                                  RGBpulse,
+                                  drawAnalyzer
+                                 };
+
+functionList effectListNoAudio[] = {threeSine,
+                                    threeDee,
+                                    scrollTextZero,
+                                    plasma,
+                                    confetti,
+                                    rider,
+                                    scrollTextOne,
+                                    glitter,
+                                    slantBars,
+                                    scrollTextTwo,
+                                    colorFill,
+                                    sideRain
+                                   };
+
+
+byte numEffects;
+const byte numEffectsAudio = (sizeof(effectListAudio) / sizeof(effectListAudio[0]));
+const byte numEffectsNoAudio =(sizeof(effectListNoAudio) / sizeof(effectListNoAudio[0]));
+
 
 // Runs one time at the start of the program (power up or reset)
 void setup() {
+
+  switch (audioEnabled) {
+    case true:
+      numEffects = numEffectsAudio;
+      break;
+    case false:
+      numEffects = numEffectsNoAudio;
+      break;
+  }
+
 
   // check to see if EEPROM has been used yet
   // if so, load the stored settings
   byte eepromWasWritten = EEPROM.read(0);
   if (eepromWasWritten == 99) {
-      currentEffect = EEPROM.read(1);
-      autoCycle = EEPROM.read(2);
-      currentBrightness = EEPROM.read(3);
+    currentEffect = EEPROM.read(1);
+    autoCycle = EEPROM.read(2);
+    currentBrightness = EEPROM.read(3);
+    if (currentEffect > (numEffects - 1)) currentEffect = 0;
   }
 
   // write FastLED configuration data
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);
-  
+
   // set global brightness value
   FastLED.setBrightness( scale8(currentBrightness, MAXBRIGHTNESS) );
 
@@ -96,26 +136,7 @@ void setup() {
 
 }
 
-// list of functions that will be displayed
-functionList effectList[] = {drawVU,
-                             RGBpulse,
-                             drawAnalyzer };
 
-/* functionList effectList[] = {threeSine,
-                             threeDee,
-                             scrollTextZero,
-                             plasma,
-                             confetti,
-                             rider,
-                             scrollTextOne,
-                             glitter,
-                             slantBars,
-                             scrollTextTwo,
-                             colorFill,
-                             sideRain };
-*/
-
-const byte numEffects = (sizeof(effectList)/sizeof(effectList[0]));
 
 // Runs over and over until power off or reset
 void loop()
@@ -127,33 +148,48 @@ void loop()
 
   // analyze the audio input
   if (currentMillis - audioMillis > AUDIODELAY) {
-    audioMillis = currentMillis;  
+    audioMillis = currentMillis;
     doAnalogs();
   }
-  
+
   // switch to a new effect every cycleTime milliseconds
   if (currentMillis - cycleMillis > cycleTime && autoCycle == true) {
-    cycleMillis = currentMillis; 
+    cycleMillis = currentMillis;
     if (++currentEffect >= numEffects) currentEffect = 0; // loop to start of effect list
     effectInit = false; // trigger effect initialization when new effect is selected
   }
-  
+
   // increment the global hue value every hueTime milliseconds
   if (currentMillis - hueMillis > hueTime) {
     hueMillis = currentMillis;
     hueCycle(1); // increment the global hue value
   }
-  
+
   // run the currently selected effect every effectDelay milliseconds
   if (currentMillis - effectMillis > effectDelay) {
     effectMillis = currentMillis;
-    effectList[currentEffect](); // run the selected effect function
+    switch (audioEnabled) {
+      case true:
+        effectListAudio[currentEffect]();
+        break;
+      case false:
+        effectListNoAudio[currentEffect]();
+        break;
+    }
     random16_add_entropy(1); // make the random values a bit more random-ish
   }
-  
+
   // run a fade effect too if the confetti effect is running
-  if (effectList[currentEffect] == confetti) fadeAll(1);
-      
+  switch (audioEnabled) {
+    case true:
+      if (effectListAudio[currentEffect] == confetti) fadeAll(1);
+      break;
+    case false:
+      if (effectListNoAudio[currentEffect] == confetti) fadeAll(1);
+      break;
+  }
+
+
   FastLED.show(); // send the contents of the led memory to the LEDs
 
 }

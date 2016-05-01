@@ -13,11 +13,12 @@ byte currentEffect = 0; // index to the currently running effect
 boolean autoCycle = true; // flag for automatic effect changes
 boolean eepromOutdated = false; // flag for when EEPROM may need to be updated
 byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHTNESS
+boolean audioEnabled = true; // flag for running audio patterns
 
 CRGBPalette16 currentPalette(RainbowColors_p); // global palette storage
 
 typedef void (*functionList)(); // definition for list of effect function pointers
-extern const byte numEffects;
+extern byte numEffects;
 
 
 // Increment the global hue value for functions that use it
@@ -134,25 +135,15 @@ void selectRandomAudioPalette() {
 
 
 // Interrupt normal operation to indicate that auto cycle mode has changed
-void confirmBlink() {
+void confirmBlink(CRGB blinkColor, byte count) {
 
-  if (autoCycle) { // one blue blink, auto mode active
-    fillAll(CRGB::DarkBlue);
+  for (byte i = 0; i < count; i++) {
+    fillAll(blinkColor);
     FastLED.show();
-    FastLED.delay(200);
+    delay(200);
     fillAll(CRGB::Black);
-    FastLED.delay(200);
-  } else { // two red blinks, manual mode active
-    fillAll(CRGB::DarkRed);
     FastLED.show();
-    FastLED.delay(200);
-    fillAll(CRGB::Black);
-    FastLED.delay(200);
-    fillAll(CRGB::DarkRed);
-    FastLED.show();
-    FastLED.delay(200);
-    fillAll(CRGB::Black);
-    FastLED.delay(200);
+    delay(200);
   }
 
 }
