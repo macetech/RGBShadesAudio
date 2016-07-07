@@ -73,13 +73,16 @@ functionList effectListAudio[] = {drawVU,
                                  };
 
 functionList effectListNoAudio[] = {threeSine,
+                                    drawVU,
                                     threeDee,
                                     scrollTextZero,
                                     plasma,
+                                    RGBpulse,
                                     confetti,
                                     rider,
                                     scrollTextOne,
                                     glitter,
+                                    drawAnalyzer,
                                     slantBars,
                                     scrollTextTwo,
                                     colorFill,
@@ -89,7 +92,7 @@ functionList effectListNoAudio[] = {threeSine,
 
 byte numEffects;
 const byte numEffectsAudio = (sizeof(effectListAudio) / sizeof(effectListAudio[0]));
-const byte numEffectsNoAudio =(sizeof(effectListNoAudio) / sizeof(effectListNoAudio[0]));
+const byte numEffectsNoAudio = (sizeof(effectListNoAudio) / sizeof(effectListNoAudio[0]));
 
 
 // Runs one time at the start of the program (power up or reset)
@@ -112,8 +115,9 @@ void setup() {
     currentEffect = EEPROM.read(1);
     autoCycle = EEPROM.read(2);
     currentBrightness = EEPROM.read(3);
-    if (currentEffect > (numEffects - 1)) currentEffect = 0;
   }
+
+  if (currentEffect > (numEffects - 1)) currentEffect = 0;
 
   // write FastLED configuration data
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);

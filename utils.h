@@ -13,7 +13,7 @@ byte currentEffect = 0; // index to the currently running effect
 boolean autoCycle = true; // flag for automatic effect changes
 boolean eepromOutdated = false; // flag for when EEPROM may need to be updated
 byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHTNESS
-boolean audioEnabled = true; // flag for running audio patterns
+boolean audioEnabled = false; // flag for running audio patterns
 
 CRGBPalette16 currentPalette(RainbowColors_p); // global palette storage
 
