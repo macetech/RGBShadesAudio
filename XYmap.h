@@ -69,3 +69,23 @@ uint8_t XY( uint8_t x, uint8_t y)
 }
 
 
+
+// Map LEDs to shades outline
+const uint8_t OutlineTable[] = {
+    0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 43,
+    44, 67, 66, 65, 64, 63, 50, 37, 21, 22, 36, 51, 62, 61, 60, 59,
+    58, 57, 30, 29
+};
+
+#define OUTLINESIZE sizeof(OutlineTable)
+
+uint8_t OutlineMap(uint8_t i) {
+  uint8_t j = OutlineTable[i % OUTLINESIZE];
+  return j;
+}
+
+
+
+
+
+

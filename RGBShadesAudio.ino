@@ -44,7 +44,7 @@
 
 // Global maximum brightness value, maximum 255
 #define MAXBRIGHTNESS 72
-#define STARTBRIGHTNESS 102
+#define STARTBRIGHTNESS 127
 
 // Cycle time (milliseconds between pattern changes)
 #define cycleTime 15000
@@ -67,25 +67,34 @@
 #include "buttons.h"
 
 // list of functions that will be displayed
-functionList effectListAudio[] = {drawVU,
+functionList effectListAudio[] = {audioShadesOutline,
+                                  audioStripes,
+                                  audioCirc,
+                                  drawVU,
                                   RGBpulse,
+                                  audioPlasma,
                                   drawAnalyzer
                                  };
 
-functionList effectListNoAudio[] = {threeSine,
-                                    drawVU,
+functionList effectListNoAudio[] = {shadesOutline,
+                                    threeSine,
+                                    //drawVU,
                                     threeDee,
-                                    scrollTextZero,
+                                    hearts,
+                                    //scrollTextZero,
                                     plasma,
-                                    RGBpulse,
+                                    //RGBpulse,
                                     confetti,
+                                    //audioCirc,
                                     rider,
-                                    scrollTextOne,
+                                    //scrollTextOne,
                                     glitter,
-                                    drawAnalyzer,
+                                    //drawAnalyzer,
                                     slantBars,
-                                    scrollTextTwo,
+                                    //scrollTextTwo,
+                                    //audioPlasma,
                                     colorFill,
+                                    //audioStripes,
                                     sideRain
                                    };
 
@@ -98,6 +107,16 @@ const byte numEffectsNoAudio = (sizeof(effectListNoAudio) / sizeof(effectListNoA
 // Runs one time at the start of the program (power up or reset)
 void setup() {
 
+  // check to see if EEPROM has been used yet
+  // if so, load the stored settings
+  byte eepromWasWritten = EEPROM.read(0);
+  if (eepromWasWritten == 99) {
+    currentEffect = EEPROM.read(1);
+    autoCycle = EEPROM.read(2);
+    currentBrightness = EEPROM.read(3);
+    audioEnabled = EEPROM.read(4);
+  }
+  
   switch (audioEnabled) {
     case true:
       numEffects = numEffectsAudio;
@@ -107,16 +126,6 @@ void setup() {
       break;
   }
 
-
-  // check to see if EEPROM has been used yet
-  // if so, load the stored settings
-  byte eepromWasWritten = EEPROM.read(0);
-  if (eepromWasWritten == 99) {
-    currentEffect = EEPROM.read(1);
-    autoCycle = EEPROM.read(2);
-    currentBrightness = EEPROM.read(3);
-  }
-
   if (currentEffect > (numEffects - 1)) currentEffect = 0;
 
   // write FastLED configuration data
@@ -124,7 +133,7 @@ void setup() {
 
   // set global brightness value
   FastLED.setBrightness( scale8(currentBrightness, MAXBRIGHTNESS) );
-
+  //FastLED.setDither(0);
   // configure input buttons
   pinMode(MODEBUTTON, INPUT_PULLUP);
   pinMode(BRIGHTNESSBUTTON, INPUT_PULLUP);
@@ -137,7 +146,7 @@ void setup() {
   digitalWrite(STROBEPIN, HIGH);
 
   random16_add_entropy(analogRead(ANALOGPIN));
-
+  //Serial.begin(115200);
 }
 
 
@@ -151,9 +160,11 @@ void loop()
   checkEEPROM();            // update the EEPROM if necessary
 
   // analyze the audio input
-  if (currentMillis - audioMillis > AUDIODELAY) {
-    audioMillis = currentMillis;
-    doAnalogs();
+  if (audioActive) {
+    if (currentMillis - audioMillis > AUDIODELAY) {
+      audioMillis = currentMillis;
+      doAnalogs();
+    }
   }
 
   // switch to a new effect every cycleTime milliseconds
@@ -161,6 +172,7 @@ void loop()
     cycleMillis = currentMillis;
     if (++currentEffect >= numEffects) currentEffect = 0; // loop to start of effect list
     effectInit = false; // trigger effect initialization when new effect is selected
+    audioActive = false;
   }
 
   // increment the global hue value every hueTime milliseconds
@@ -180,19 +192,13 @@ void loop()
         effectListNoAudio[currentEffect]();
         break;
     }
-    random16_add_entropy(1); // make the random values a bit more random-ish
+    //random16_add_entropy(1); // make the random values a bit more random-ish
   }
 
-  // run a fade effect too if the confetti effect is running
-  switch (audioEnabled) {
-    case true:
-      if (effectListAudio[currentEffect] == confetti) fadeAll(1);
-      break;
-    case false:
-      if (effectListNoAudio[currentEffect] == confetti) fadeAll(1);
-      break;
+  // run a fade effect
+  if (fadeActive > 0) {
+    fadeAll(fadeActive);
   }
-
 
   FastLED.show(); // send the contents of the led memory to the LEDs
 

@@ -97,6 +97,9 @@ void doButtons() {
     }
     currentEffect = 0;
     effectInit = false;
+    audioActive = false;
+    eepromMillis = currentMillis;
+    eepromOutdated = true;
     confirmBlink(CRGB::DarkGreen, 3);
     buttonStatuses[0] = BTNGUARDTIME;
     buttonStatuses[1] = BTNGUARDTIME;
@@ -109,6 +112,7 @@ void doButtons() {
         cycleMillis = currentMillis;
         if (++currentEffect >= numEffects) currentEffect = 0; // loop to start of effect list
         effectInit = false; // trigger effect initialization when new effect is selected
+        audioActive = false;
         eepromMillis = currentMillis;
         eepromOutdated = true;
         break;

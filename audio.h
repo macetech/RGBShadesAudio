@@ -1,6 +1,6 @@
 // Interface with MSGEQ7 chip for audio analysis
 
-#define AUDIODELAY 10
+#define AUDIODELAY 8
 
 // Pin definitions
 #define ANALOGPIN 3
@@ -8,12 +8,12 @@
 #define RESETPIN 7
 
 // Smooth/average settings
-#define SPECTRUMSMOOTH 0.08
-#define PEAKDECAY 0.01
-#define NOISEFLOOR 65
+#define SPECTRUMSMOOTH 0.1
+#define PEAKDECAY 0.05
+#define NOISEFLOOR 75
 
 // AGC settings
-#define AGCSMOOTH 0.004
+#define AGCSMOOTH 0.003
 #define GAINUPPERLIMIT 15.0
 #define GAINLOWERLIMIT 0.1
 
@@ -21,31 +21,34 @@
 unsigned int spectrumValue[7];  // holds raw adc values
 float spectrumDecay[7] = {0};   // holds time-averaged values
 float spectrumPeaks[7] = {0};   // holds peak values
-float audioAvg = 270.0;
-float gainAGC = 0.0;
+float audioAvg = 300.0;
+float gainAGC = 1.0;
 
 void doAnalogs() {
 
-  static PROGMEM const byte spectrumFactors[7] = {9, 11, 13, 13, 12, 12, 13};
+  static PROGMEM const byte spectrumFactors[7] = {6, 8, 8, 8, 7, 7, 10};
 
   // reset MSGEQ7 to first frequency bin
   digitalWrite(RESETPIN, HIGH);
   delayMicroseconds(5);
   digitalWrite(RESETPIN, LOW);
+  delayMicroseconds(10);
+   
 
   // store sum of values for AGC
-  int analogsum = 0;
+  unsigned int analogsum = 0;
 
   // cycle through each MSGEQ7 bin and read the analog values
   for (int i = 0; i < 7; i++) {
 
     // set up the MSGEQ7
     digitalWrite(STROBEPIN, LOW);
-    delayMicroseconds(50); // to allow the output to settle
+    delayMicroseconds(25); // allow the output to settle
 
     // read the analog value
-    spectrumValue[i] = analogRead(ANALOGPIN);
+    spectrumValue[i] = (analogRead(ANALOGPIN)+analogRead(ANALOGPIN)+analogRead(ANALOGPIN))/3;
     digitalWrite(STROBEPIN, HIGH);
+    delayMicroseconds(30);
 
     // noise floor filter
     if (spectrumValue[i] < NOISEFLOOR) {
@@ -55,7 +58,8 @@ void doAnalogs() {
     }
 
     // apply correction factor per frequency bin
-    spectrumValue[i] = (spectrumValue[i]*pgm_read_byte_near(spectrumFactors + i))/10;
+    spectrumValue[i] = (spectrumValue[i]*pgm_read_byte(spectrumFactors+i));
+    spectrumValue[i] /= 10;
 
     // prepare average for AGC
     analogsum += spectrumValue[i];
@@ -69,19 +73,18 @@ void doAnalogs() {
     // process peak values
     if (spectrumPeaks[i] < spectrumDecay[i]) spectrumPeaks[i] = spectrumDecay[i];
     spectrumPeaks[i] = spectrumPeaks[i] * (1.0 - PEAKDECAY);
+
+
   }
 
   // Calculate audio levels for automatic gain
   audioAvg = (1.0 - AGCSMOOTH) * audioAvg + AGCSMOOTH * (analogsum / 7.0);
 
   // Calculate gain adjustment factor
-  gainAGC = 270.0 / audioAvg;
+  gainAGC = 300.0 / audioAvg;
   if (gainAGC > GAINUPPERLIMIT) gainAGC = GAINUPPERLIMIT;
   if (gainAGC < GAINLOWERLIMIT) gainAGC = GAINLOWERLIMIT;
-
-
-
-
+  //Serial.println(gainAGC);
 
 }
 

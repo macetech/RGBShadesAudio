@@ -15,6 +15,7 @@ void threeSine() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 20;
+    fadeActive = 0;
   }
 
   // Draw one frame of the animation into the LED array
@@ -46,6 +47,7 @@ void plasma() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 10;
+    fadeActive = 0;
   }
 
   // Calculate current center of plasma pattern (can be offscreen)
@@ -76,6 +78,7 @@ void rider() {
     effectInit = true;
     effectDelay = 5;
     riderPos = 0;
+    fadeActive = 0;
   }
 
   // Draw one frame of the animation into the LED array
@@ -101,6 +104,7 @@ void glitter() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 15;
+    fadeActive = 0;
   }
 
   // Draw one frame of the animation into the LED array
@@ -128,6 +132,7 @@ void colorFill() {
     currentRow = 0;
     currentDirection = 0;
     currentPalette = RainbowColors_p;
+    fadeActive = 0;
   }
 
   // test a bitmask to fill up or down when currentDirection is 0 or 2 (0b00 or 0b10)
@@ -172,6 +177,7 @@ void threeDee() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 50;
+    fadeActive = 0;
   }
 
   for (byte x = 0; x < kMatrixWidth; x++) {
@@ -199,6 +205,7 @@ void sideRain() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 30;
+    fadeActive = 0;
   }
 
   scrollArray(rainDir);
@@ -217,6 +224,7 @@ void confetti() {
     effectInit = true;
     effectDelay = 10;
     selectRandomPalette();
+    fadeActive = 1;
   }
 
   // scatter random colored pixels at several random coordinates
@@ -237,6 +245,7 @@ void slantBars() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 5;
+    fadeActive = 0;
   }
 
   for (byte x = 0; x < kMatrixWidth; x++) {
@@ -272,6 +281,7 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
     loadCharBuffer(loadStringChar(message, currentMessageChar));
     currentPalette = RainbowColors_p;
     for (byte i = 0; i < kMatrixWidth; i++) bitBuffer[i] = 0;
+    fadeActive = 0;
   }
 
   paletteCycle += 15;
@@ -339,6 +349,8 @@ void drawAnalyzer() {
     effectInit = true;
     effectDelay = 10;
     selectRandomAudioPalette();
+    audioActive = true;
+    fadeActive = 0;
   }
 
   CRGB pixelColor;
@@ -388,6 +400,8 @@ void drawVU() {
     effectInit = true;
     effectDelay = 10;
     selectRandomAudioPalette();
+    audioActive = true;
+    fadeActive = 0;
   }
 
   CRGB pixelColor;
@@ -423,11 +437,11 @@ void RGBpulse() {
   if (effectInit == false) {
     effectInit = true;
     effectDelay = 1;
+    audioActive = true;
+    fadeActive = 1;
   }
 
   static byte RGBcycle = 0;
-
-  fadeAll(1);
 
   if (beatDetect()) {
 
@@ -448,4 +462,251 @@ void RGBpulse() {
   }
 
 }
+
+// RGB Plasma
+void audioPlasma() {
+
+  static byte offset  = 0; // counter for radial color wave motion
+  static int plasVector = 0; // counter for orbiting plasma center
+
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 10;
+    selectRandomAudioPalette();
+    audioActive = true;
+    fadeActive = 0;
+  }
+
+  // Calculate current center of plasma pattern (can be offscreen)
+  int xOffset = (cos8(plasVector / 256)-127)/2;
+  int yOffset = (sin8(plasVector / 256)-127)/2;
+
+  //int xOffset = 0;
+  //int yOffset = 0;
+
+
+  // Draw one frame of the animation into the LED array
+  for (int x = 0; x < kMatrixWidth; x++) {
+    for (int y = 0; y < kMatrixHeight; y++) {
+      byte color = sin8(sqrt(sq(((float)x - 7.5) * 12 + xOffset) + sq(((float)y - 2) * 12 + yOffset)) + offset);
+      leds[XY(x, y)] = ColorFromPalette(currentPalette, color, 255);
+    }
+  }
+
+  offset++; // wraps at 255 for sin8
+  plasVector += (spectrumDecay[0] + spectrumDecay[1] + spectrumDecay[2]); // using an int for slower orbit (wraps at 65536)
+
+}
+
+
+
+void audioCirc() {
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 10;
+    audioActive = true;
+    fadeActive = 0;
+  }
+
+  int lowfreq; int medfreq; int hifreq;
+
+  for (byte x = 0; x < kMatrixWidth; x++) {
+    for (int y = 0; y < kMatrixHeight; y++) {
+      lowfreq = spectrumValue[0]/(hypot(x-7.5, y-2)*1.5);
+      medfreq = spectrumDecay[2]/(hypot(x-7.5, y-2)*1.1);
+      hifreq = spectrumDecay[5]/(hypot(x-7.5, y-2)*1.2);
+
+      if (lowfreq < 90) lowfreq = 0;
+      if (lowfreq > 255) lowfreq = 255;
+
+      if (medfreq < 60) medfreq = 0;
+      if (medfreq > 255) medfreq = 255;
+
+      if (hifreq < 60) hifreq = 0;
+      if (hifreq > 255) hifreq = 255;
+      
+      leds[XY(x,y)] = CRGB(lowfreq, medfreq, hifreq);
+    }
+  }
+
+  
+}
+
+
+// RGB Plasma
+void audioSpin() {
+
+  static byte offset  = 0; // counter for radial color wave motion
+  static int plasVector = 0; // counter for orbiting plasma center
+
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 10;
+    selectRandomAudioPalette();
+    audioActive = true;
+    fadeActive = 0;
+  }
+
+  // Calculate current center of plasma pattern (can be offscreen)
+  int xOffset = 0;
+  int yOffset = 0;
+
+  //int xOffset = 0;
+  //int yOffset = 0;
+
+
+  // Draw one frame of the animation into the LED array
+  for (int x = 0; x < kMatrixWidth; x++) {
+    for (int y = 0; y < kMatrixHeight; y++) {
+      //byte color = sin8(sqrt(sq(((float)x - 7.5) * 12 + xOffset) + sq(((float)y - 2) * 12 + yOffset)) + offset);
+      float tanxy = ((float)(x-7.5)/(float)((y-2))*2);
+      byte color = sin8(tanxy*10+plasVector/100);
+      leds[XY(x, y)] = ColorFromPalette(currentPalette, color, 255);
+    }
+  }
+
+  offset++; // wraps at 255 for sin8
+  plasVector += (spectrumDecay[0] + spectrumDecay[1] + spectrumDecay[2]); // using an int for slower orbit (wraps at 65536)
+
+}
+
+
+void audioStripes() {
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 25;
+    selectRandomAudioPalette();
+    fadeActive = 0;
+    audioActive = true;
+  }
+
+  CRGB linecolor;
+  int audioLevel;
+  int brightLevel;
+
+  for (byte y = 0; y < 5; y++) {
+
+    //audioLevel = spectrumDecay[y+1] / 2.0;
+    audioLevel = spectrumPeaks[y+1] / 1.8;
+    if (y == 0) audioLevel /= 2;
+    if (audioLevel > 239) audioLevel = 239;
+
+
+    
+    for (byte x = 0; x < kMatrixWidth; x++) {
+          brightLevel = (audioLevel-(abs(7.5-x)*20)) * 3.0;
+          if (brightLevel < 0) brightLevel = 0;
+          if (brightLevel > 254) brightLevel = 254;
+          linecolor = ColorFromPalette(currentPalette, audioLevel, brightLevel);
+      leds[XY(x, 4-y)] = linecolor;
+    }
+  }
+}
+
+
+//leds run around the periphery of the shades, changing color every go 'round
+void shadesOutline() {
+  
+  static uint8_t x = 0;
+  
+  //startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 25;
+    FastLED.clear();
+    currentPalette = RainbowColors_p;
+    fadeActive = 2;
+  }
+
+  CRGB pixelColor = CHSV(cycleHue, 255, 255);
+  leds[OutlineMap(x)] = pixelColor;
+
+  x++;
+  if (x > (OUTLINESIZE-1)) x = 0;
+  
+}
+
+void audioShadesOutline() {
+  
+  static float x = 0;
+  
+  //startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 15;
+    FastLED.clear();
+    currentPalette = RainbowColors_p;
+    fadeActive = 8;
+    audioActive = true;
+  }
+
+  int brightness = (spectrumDecay[0] + spectrumDecay[1]);
+  if (brightness > 255) brightness = 255;
+
+  CRGB pixelColor = CHSV(cycleHue, 255, brightness);
+  
+  for (byte k = 0; k < 4; k++) {
+    leds[OutlineMap(x+(OUTLINESIZE/4-1)*k)] += pixelColor;
+  }
+
+  float xincr = (spectrumDecay[0] + spectrumDecay[1]) / 500.0;
+  if (xincr > 1.0) xincr = 1.0;
+  if (xincr < 0.2) xincr = 0.2;
+
+  x += xincr;
+  if (x > (OUTLINESIZE-1)) x = 0;
+  
+}
+
+
+//hearts that start small on the bottom and get larger as they grow upward
+const uint8_t SmHeart[] = {46, 48, 53, 55, 60, 65};
+const uint8_t MedHeart[] = {31, 32, 34, 35, 38, 39,
+                            41, 42, 46, 47, 48, 55, 54, 53, 54, 55, 60, 65
+                           };
+const uint8_t LrgHeart[] = {15, 16, 18, 19, 24, 25,
+                            27, 28, 31, 32, 33, 34, 35, 38, 39, 40, 41, 42,
+                            46, 47, 48, 53, 54, 55, 60, 65
+                           };
+const uint8_t HugeHeart[] = {0, 1, 3, 4, 9, 10, 12,
+                             13, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26,
+                             27, 28, 29, 31, 32, 33, 34, 35, 38, 39, 40, 41,
+                             42, 46, 47, 48, 53, 54, 55, 60, 65
+                            };
+void hearts() {
+  static boolean erase = false;
+  static uint8_t x, y = 0;
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 150;
+    FastLED.clear();
+    fadeActive = 0;
+
+    x = 0;
+    y = 0;
+  }
+  if (y == 5)
+    y = 0;
+  if (y == 0)
+    for (x = 0; x < 6; x++)
+      leds[SmHeart[x]] = CRGB::Salmon; //Tried to transition from pink-ish to red. Kinda worked.
+  if (y == 1)
+    for (x = 0; x < 18; x++)
+      leds[MedHeart[x]] = CRGB::Tomato;
+  if (y == 2)
+    for (x = 0; x < 26; x++)
+      leds[LrgHeart[x]] = CRGB::Crimson;
+  if (y == 3) {
+    for (x = 0; x < 40; x++)
+      leds[HugeHeart[x]] = CRGB::Red;
+  } //set the delay slightly longer for HUGE heart.
+  if (y == 4)
+    FastLED.clear();
+  y++;
+}
+
 
