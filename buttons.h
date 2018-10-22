@@ -84,7 +84,6 @@ byte buttonStatus(byte buttonNum) {
 
 void doButtons() {
 
-
   if ((buttonStatuses[0] == BTNPRESSED) && (buttonStatuses[1] == BTNPRESSED)) {
     audioEnabled = !audioEnabled; // toggle audio mode
     switch (audioEnabled) {
@@ -135,15 +134,14 @@ void doButtons() {
     switch (buttonStatus(1)) {
 
       case BTNRELEASED: // button was pressed and released quickly
-        currentBrightness += 51; // increase the brightness (wraps to lowest)
-        FastLED.setBrightness(scale8(currentBrightness, MAXBRIGHTNESS));
+        FastLED.setBrightness(scale8(nextBrightness(false), MAXBRIGHTNESS));
         eepromMillis = currentMillis;
         eepromOutdated = true;
         break;
 
       case BTNLONGPRESS: // button was held down for a while
-        currentBrightness = STARTBRIGHTNESS; // reset brightness to startup value
-        FastLED.setBrightness(scale8(currentBrightness, MAXBRIGHTNESS));
+        // reset brightness to startup value
+        FastLED.setBrightness(scale8(nextBrightness(true), MAXBRIGHTNESS));
         eepromMillis = currentMillis;
         eepromOutdated = true;
         break;

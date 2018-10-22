@@ -134,7 +134,39 @@ void selectRandomAudioPalette() {
 
 }
 
+void selectRandomNoisePalette() {
 
+  switch(random8(4)) {
+    case 0:
+    currentPalette = CRGBPalette16(CRGB::Black, CRGB::Red, CRGB::Black, CRGB::Blue);
+    break;
+    
+    case 1:
+    currentPalette = CRGBPalette16(CRGB::DarkGreen, CRGB::Black, CRGB::Green);
+    break;
+    
+    case 2:
+    currentPalette = CRGBPalette16(CRGB(0,0,8), CRGB(0,0,16), CRGB(0,0,32), CRGB::White);
+    break;
+    
+    case 3:
+    currentPalette = CRGBPalette16(CRGB(255,0,127), CRGB::Black, CRGB::OrangeRed);
+    break;
+    
+    case 5:
+    currentPalette = RainbowColors_p;
+    break;
+    
+    case 6:
+    currentPalette = PartyColors_p;
+    break;
+    
+    case 7:
+    currentPalette = HeatColors_p;
+    break;
+  }
+
+}
 
 // Interrupt normal operation to indicate that auto cycle mode has changed
 void confirmBlink(CRGB blinkColor, byte count) {
@@ -197,3 +229,38 @@ void checkEEPROM() {
     }
   }
 }
+
+
+#define MAX_DIMENSION ((kMatrixWidth>kMatrixHeight) ? kMatrixWidth : kMatrixHeight)
+uint8_t noise[MAX_DIMENSION][MAX_DIMENSION];
+uint16_t scale = 72;
+static uint16_t nx;
+static uint16_t ny;
+static uint16_t nz;
+uint16_t nspeed = 0;
+
+// Fill the x/y array of 8-bit noise values using the inoise8 function.
+void fillnoise8() {
+  for(int i = 0; i < MAX_DIMENSION; i++) {
+    int ioffset = scale * i;
+    for(int j = 0; j < MAX_DIMENSION; j++) {
+      int joffset = scale * j;
+      noise[i][j] = inoise8(nx + ioffset,ny + joffset,nz);
+    }
+  }
+  nz += nspeed;
+}
+
+byte nextBrightness(boolean resetVal) {
+    const byte brightVals[6] = {32,64,96,160,224,255};
+
+    if (resetVal) {
+      currentBrightness = STARTBRIGHTNESS;
+    } else {
+      currentBrightness++;
+      if (currentBrightness > sizeof(brightVals)/sizeof(brightVals[0])) currentBrightness = 0;
+    }
+
+  return brightVals[currentBrightness];
+}
+

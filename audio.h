@@ -10,11 +10,11 @@
 // Smooth/average settings
 #define SPECTRUMSMOOTH 0.1
 #define PEAKDECAY 0.05
-#define NOISEFLOOR 75
+#define NOISEFLOOR 65
 
 // AGC settings
-#define AGCSMOOTH 0.003
-#define GAINUPPERLIMIT 15.0
+#define AGCSMOOTH 0.004
+#define GAINUPPERLIMIT 20.0
 #define GAINLOWERLIMIT 0.1
 
 // Global variables
@@ -90,8 +90,8 @@ void doAnalogs() {
 
 // Attempt at beat detection
 byte beatTriggered = 0;
-#define beatLevel 20.0
-#define beatDeadzone 30.0
+#define beatLevel 25.0
+#define beatDeadzone 35.0
 #define beatDelay 50
 float lastBeatVal = 0;
 byte beatDetect() {

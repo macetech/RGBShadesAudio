@@ -44,7 +44,7 @@
 
 // Global maximum brightness value, maximum 255
 #define MAXBRIGHTNESS 72
-#define STARTBRIGHTNESS 127
+#define STARTBRIGHTNESS 2
 
 // Cycle time (milliseconds between pattern changes)
 #define cycleTime 15000
@@ -67,16 +67,20 @@
 #include "buttons.h"
 
 // list of functions that will be displayed
-functionList effectListAudio[] = {audioShadesOutline,
+functionList effectListAudio[] = {
+                                  noiseFlyer,
+                                  rings,
+                                  audioShadesOutline,
                                   audioStripes,
                                   audioCirc,
                                   drawVU,
-                                  RGBpulse,
+                                  //RGBpulse,
                                   audioPlasma,
                                   drawAnalyzer
                                  };
 
-functionList effectListNoAudio[] = {shadesOutline,
+functionList effectListNoAudio[] = {
+                                    shadesOutline,
                                     threeSine,
                                     //drawVU,
                                     threeDee,
@@ -132,7 +136,7 @@ void setup() {
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);
 
   // set global brightness value
-  FastLED.setBrightness( scale8(currentBrightness, MAXBRIGHTNESS) );
+  FastLED.setBrightness( scale8(nextBrightness(false), MAXBRIGHTNESS) );
   //FastLED.setDither(0);
   // configure input buttons
   pinMode(MODEBUTTON, INPUT_PULLUP);

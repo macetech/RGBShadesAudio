@@ -250,7 +250,7 @@ void slantBars() {
 
   for (byte x = 0; x < kMatrixWidth; x++) {
     for (byte y = 0; y < kMatrixHeight; y++) {
-      leds[XY(x, y)] = CHSV(cycleHue, 255, quadwave8(x * 32 + y * 32 + slantPos));
+      leds[XY(x, y)] = CHSV(cycleHue, 255, sin8(x * 32 + y * 32 + slantPos));
     }
   }
 
@@ -640,9 +640,11 @@ void audioShadesOutline() {
     effectDelay = 15;
     FastLED.clear();
     currentPalette = RainbowColors_p;
-    fadeActive = 8;
+    fadeActive = 10;
     audioActive = true;
   }
+
+  static uint8_t beatcount = 0;
 
   int brightness = (spectrumDecay[0] + spectrumDecay[1]);
   if (brightness > 255) brightness = 255;
@@ -653,12 +655,26 @@ void audioShadesOutline() {
     leds[OutlineMap(x+(OUTLINESIZE/4-1)*k)] += pixelColor;
   }
 
-  float xincr = (spectrumDecay[0] + spectrumDecay[1]) / 500.0;
+  float xincr = (spectrumDecay[0] + spectrumDecay[1]) / 600.0;
   if (xincr > 1.0) xincr = 1.0;
-  if (xincr < 0.2) xincr = 0.2;
+  if (xincr < 0.1) xincr = 0.1;
 
-  x += xincr;
+
+
+
+  if (beatDetect()) {
+    beatcount++;
+    if (beatcount >= 32 ) beatcount = 0;
+  }
+
+  if (beatcount < 16 ) {
+    x += xincr;
+  } else {
+    x -= xincr;
+  }
+  
   if (x > (OUTLINESIZE-1)) x = 0;
+  if (x < 0) x = OUTLINESIZE - 1;
   
 }
 
@@ -708,5 +724,133 @@ void hearts() {
     FastLED.clear();
   y++;
 }
+
+
+
+// Ring pulser
+
+
+void drawRing(int xCenter, int yCenter, float radius, CRGB color) {
+  int brightness;
+  CRGB tempColor;
+
+  if (radius > 13) radius = 13;
+  
+  for (int x = 0; x < kMatrixWidth; x++) {
+    for (int y = 0; y < kMatrixHeight; y++) {
+      brightness = 255 - abs((hypot((float)x - 7.5 - xCenter/256.0, (float)y - 2.0 - yCenter/256.0) - radius)*192.0);
+      if (brightness > 255) brightness = 255;
+      if (brightness < 0) brightness = 0;
+      tempColor = color;
+      leds[XY(x, y)] += tempColor.nscale8(brightness);
+    }
+  }
+}
+
+void rings() {
+
+  static float offset  = 0; // counter for radial color wave motion
+  static uint16_t plasVector = 0; // counter for orbiting plasma center
+
+
+  #define RING_GAINSMOOTH 0.01
+  static float ringavg1 = 500, ringavg2 = 500, ringavg3 = 500;
+  float ringval1, ringval2, ringval3;
+
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 10;
+    fadeActive = 0;
+    audioActive = true;
+  }
+
+
+  // Calculate current center of plasma pattern (can be offscreen)
+  int xOffset;
+  int yOffset;
+
+  fillAll(0);
+
+
+
+  ringval1 = spectrumDecay[0] + spectrumDecay[1] + spectrumDecay[2];
+  ringval2 = spectrumDecay[3] + spectrumDecay[4];
+  ringval3 = spectrumDecay[5] + spectrumDecay[6];
+
+  ringavg1 = ringavg1 * (1.0 - RING_GAINSMOOTH) + ringval1 * RING_GAINSMOOTH;
+  ringavg2 = ringavg2 * (1.0 - RING_GAINSMOOTH) + ringval2 * RING_GAINSMOOTH;
+  ringavg3 = ringavg3 * (1.0 - RING_GAINSMOOTH) + ringval3 * RING_GAINSMOOTH;
+
+  float ring_gain1 = (6.0/ringavg1);
+  float ring_gain2 = (6.0/ringavg2);
+  float ring_gain3 = (5.0/ringavg3);
+
+  if (ring_gain1 > 0.05) ring_gain1 = 0.05;
+  if (ring_gain2 > 0.05) ring_gain2 = 0.05;
+  if (ring_gain3 > 0.05) ring_gain3 = 0.05;
+
+  xOffset = cos16(plasVector);
+  yOffset = sin16(plasVector);
+  drawRing(xOffset/24,yOffset/24, ringval1 * ring_gain1, CRGB::Red);
+
+  xOffset = cos16(plasVector+65535*0.33);
+  yOffset = sin16(plasVector+65535*0.33);
+    drawRing(xOffset/24,yOffset/24, ringval2 * ring_gain2, CRGB::Green);
+
+
+  xOffset = cos16(plasVector+65535*0.66);
+  yOffset = sin16(plasVector+65535*0.66);
+  drawRing(xOffset/24,yOffset/24, ringval3 * ring_gain2, CRGB::Blue);
+
+
+  offset += 0.2;
+  plasVector += 256; // using an int for slower orbit (wraps at 65536)
+
+}
+
+// Noise flyer
+
+void noiseFlyer() {
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 10;
+    selectRandomNoisePalette();
+
+    audioActive = true;
+  }
+
+  static byte hueOffset = 0;
+  static byte heading = 0;
+
+  fillnoise8();
+  float kph = (spectrumDecay[0] + spectrumDecay[1] + spectrumDecay[2]) / 3.0;
+  
+  int brightness;
+
+  for (byte x = 0; x < kMatrixWidth; x++) {
+    for (byte y = 0; y < kMatrixHeight; y++) {
+      brightness = kph/4 - 72;
+      brightness += noise[x][y];
+      if (brightness > 240) brightness = 240;
+      if (brightness < 0) brightness = 0;
+      CRGB pixelColor = ColorFromPalette(currentPalette, brightness, 255);
+      leds[XY(x,y)] = pixelColor;
+    }
+  }
+  
+  //hueOffset++;
+
+  heading += random8(5) - 2;
+
+
+  
+  nx += sin8(heading) * kph / 6000 + 5;
+  ny += cos8(heading) * kph / 6000 + 5;
+
+  
+}
+
 
 
